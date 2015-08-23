@@ -12,7 +12,7 @@ library(labeling)
 final_test <- read.csv('https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv')
 ```
 
-Let's follow the steps for **CROSS VALIDATION** outlined in slide 4 in the Cross Validation lecture for this course.  For reference, the steps are list as:
+Let's follow the steps for **CROSS VALIDATION** outlined in slide 4 in the Cross Validation lecture for this course.  For reference, the steps are listed as:
 
 *Step 1: Use training set*
 
@@ -62,7 +62,7 @@ qplot(roll_belt,classe,data=training)
 The figure above shows there is also a relationship between the features "roll_belt" and "classe".  While not all values of "roll_belt" are associated with unique values of "classe", it does appear that very high values of "roll_belt" are associated with with a "classe" value of E, and low values of "roll_belt" (except for those around 0) are associated with "classe" values of E or D.  Therefore, the "roll_belt" feature may also be a useful feature in predicting "classe".
 
 
-Based on this analysis, let's form a new data sets that takes only the "num_window" and "roll_belt" features.  We will pull these features from both our "training" subset.
+Based on this analysis, let's form a new data sets that takes only the "num_window" and "roll_belt" features.  We will pull these features from our "training" subset.
 
 ```{r}
 new_train <- training[,c("num_window", "roll_belt")]
@@ -80,7 +80,7 @@ Now we are ready to test this model on our "testing" subset.
 
 ##Step 4: Evaluate on the test set##
 
-First we will need to apply the same proccesing we did to the "training" subset (i.e., extract onlt the "num_window" and "roll_belt" features) to our "testing" subset.
+First we will need to apply the same proccesing we applied to the "training" subset (i.e., extract onlt the "num_window" and "roll_belt" features) to our "testing" subset.
 
 ```{r}
 new_test <- testing[,c("num_window", "roll_belt")]
@@ -163,7 +163,7 @@ model3_err
 We find the error of this model applied to the new "testing"" subsample is `r model3_err`.  
 
 
-We average all three errors for the three subsamples to **estimate the out of sample error using cross validation***:
+We average all three errors for the three subsamples to **estimate the out of sample error using cross validation**:
 
 ```{r}
 out_of_sample_error <- mean(model1_err, model2_err, model3_err)
