@@ -1,0 +1,179 @@
+---
+title: "program_assignment"
+output: html_document
+---
+
+```{r, echo=FALSE, message=FALSE}
+library(caret)
+library(labeling)
+```
+
+```{r, echo=FALSE}
+final_test <- read.csv('https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv')
+```
+
+Let's follow the steps for **CROSS VALIDATION** outlined in slide 4 in the Cross Validation lecture for this course.  For reference, the steps are list as:
+
+*Step 1: Use training set*
+
+*Step 2: Split it into training/test sets*
+
+*Step 3: Build a model on the training set*
+
+*Step 4: Evaluate on the test set*
+
+*Step 5: Repeat and average the errors*
+
+Each section of this document represents one of these steps.
+
+##Step 1: Use training set##
+
+So let's load the full training set as "full_train".  
+
+```{r}
+full_train <- read.csv('https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv')
+```
+
+
+##Step 2: Split it into training/test sets##
+
+So before we even begin looking at the training data let's break it up into subsets.  This will allow us to perform **cross validation** on our model and estimate our out of sample error.  We will be using the **Random subsampling** approach, so let's split the "full_train" training set into two random subsamples, where the "training"" subset is 70% of the "full_train" set, and the "testing" subset is the remaining 30% of the "full_train" set.
+```{r}
+inTrain <- createDataPartition(y=full_train$classe, p=0.7, list=FALSE)
+training <- full_train[inTrain,]
+testing <- full_train[-inTrain,]
+```
+
+
+##Step 3: Build a model on the training set##
+
+Now let's begin exploring the subset "training".  Remember, we want to build our model on our new "training" subset, and leave the "testing"" subset alone, so that we can perform **cross validation**.  Since we are interested in predicting the "classe" feature, let's plot it with respect to some other features.
+
+```{r}
+qplot(num_window,classe,data=training)
+```
+
+Based on the figure above, it seems like the feature "num_window" will be useful in predicting "classe".  Notice how for many "num_window" values, there is only one "classe" value associated that given "num_window" value.  In other words, if you know the value of "num_window", you'd be able to predict the value of "classe".
+
+```{r}
+qplot(roll_belt,classe,data=training)
+```
+
+The figure above shows there is also a relationship between the features "roll_belt" and "classe".  While not all values of "roll_belt" are associated with unique values of "classe", it does appear that very high values of "roll_belt" are associated with with a "classe" value of E, and low values of "roll_belt" (except for those around 0) are associated with "classe" values of E or D.  Therefore, the "roll_belt" feature may also be a useful feature in predicting "classe".
+
+
+Based on this analysis, let's form a new data sets that takes only the "num_window" and "roll_belt" features.  We will pull these features from both our "training" subset.
+
+```{r}
+new_train <- training[,c("num_window", "roll_belt")]
+```
+
+Now we need to actually *build* a model.  Since the "classe" feature is a classification (as opposed to a continuous numerical value), we probably want a classification model.  Random forests are useful for building classification models, so let's take that approach.
+
+Here we build a random forest model called "newModel" with the "num_window" and "roll_belt" features of our "training" subset.
+
+```{r, message=FALSE}
+newModel <- train(training$classe ~ ., method="rf", data=new_train)
+```
+
+Now we are ready to test this model on our "testing" subset.
+
+##Step 4: Evaluate on the test set##
+
+First we will need to apply the same proccesing we did to the "training" subset (i.e., extract onlt the "num_window" and "roll_belt" features) to our "testing" subset.
+
+```{r}
+new_test <- testing[,c("num_window", "roll_belt")]
+```
+
+Since the "classe" feature is a classification value (rather than a continuout numerical value) we'll use a confusion matrix to obtain the error of this model on our testing subset.
+
+```{r}
+evalModel <- confusionMatrix(testing$classe,predict(newModel,new_test))
+```
+
+Let's take a look at the accuracy from the output of our confusion matrix.
+
+```{r}
+evalModel$overall['Accuracy']
+```
+
+We see from the above output that the accuracy of our model is `r evalModel$overall[['Accuracy']]`.  The error of this model can be calculated a 1 - Accuracy, and is found to be `r 1-evalModel$overall[['Accuracy']]`.  Let's save this value for reference.
+
+```{r}
+model1_err <- 1-evalModel$overall[['Accuracy']]
+```
+
+##Step 5: Repeat and average the errors##
+
+In order to perform **cross validation** and **estimate our out of sample error** , we need to repeat the above 4 steps on different random subsamples of our "full_train" training set.  
+
+First let's remove previous results, so that we are sure our new results are based on the new subsamples.
+
+```{r, message=FALSE}
+rm(inTrain)
+rm(training)
+rm(testing)
+rm(new_train)
+rm(new_test)
+rm(newModel)
+rm(evalModel)
+```
+I'll just show the steps here without description, because we are simply repeating the exact same steps as described above, after creating new subsamples.
+
+```{r, message=FALSE}
+inTrain <- createDataPartition(y=full_train$classe, p=0.7, list=FALSE)
+training <- full_train[inTrain,]
+testing <- full_train[-inTrain,]
+new_train <- training[,c("num_window", "roll_belt")]
+newModel <- train(training$classe ~ ., method="rf", data=new_train)
+new_test <- testing[,c("num_window", "roll_belt")]
+evalModel <- confusionMatrix(testing$classe,predict(newModel,new_test))
+model2_err <- 1 - evalModel$overall[['Accuracy']]
+model2_err
+```
+
+We find the error of this model applied to the new "testing"" subsample is `r model2_err`.
+
+Let's remove these results:
+
+```{r, message=FALSE}
+rm(inTrain)
+rm(training)
+rm(testing)
+rm(new_train)
+rm(new_test)
+rm(newModel)
+rm(evalModel)
+```
+
+And try one more time:
+```{r, message=FALSE}
+inTrain <- createDataPartition(y=full_train$classe, p=0.7, list=FALSE)
+training <- full_train[inTrain,]
+testing <- full_train[-inTrain,]
+new_train <- training[,c("num_window", "roll_belt")]
+newModel <- train(training$classe ~ ., method="rf", data=new_train)
+new_test <- testing[,c("num_window", "roll_belt")]
+evalModel <- confusionMatrix(testing$classe,predict(newModel,new_test))
+model3_err <- 1 - evalModel$overall[['Accuracy']]
+model3_err
+```
+
+We find the error of this model applied to the new "testing"" subsample is `r model3_err`.  
+
+
+We average all three errors for the three subsamples to **estimate the out of sample error using cross validation***:
+
+```{r}
+out_of_sample_error <- mean(model1_err, model2_err, model3_err)
+out_of_sample_error
+```
+
+Therefore, we would estimate our **out of sample error** to be `r out_of_sample_error`.  This estimate of out of sample error was obtained by **cross validation**, where the error of repeated subsampling was averaged.  And, in fact, after applying this model to the true testing set and submitting the predictions for the course assignment, I did have 100% accuracy with all predictions.
+
+
+
+
+
+
